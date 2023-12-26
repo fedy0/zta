@@ -1,6 +1,3 @@
-[submodule "components/axi-crossbar"]
-	path = components/axi-crossbar
-	url = https://github.com/fedy0/axi-crossbar.git
 [submodule "components/ztachip"]
 	path = components/ztachip
 	url = https://github.com/fedy0/ztachip.git
