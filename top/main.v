@@ -20,10 +20,10 @@
 // This is the reference design to show how to build a SOC with ztachip as 
 // accelerator for vision/AI workload
 //
-// The example here is based on Xilinx ArtyA7 board. However, it is generic
+// The example here is based on ULX3S board. However, it is generic
 // and can be adapted to other FPGA or ASIC platform.
 // When ported to other FPGA/ASIC, the components to be replaced in this example
-// are DDR-Controller and AXI crossbar. Other components including ztachip are 
+// are SDRAM-Controller. Other components including ztachip are 
 // generic HDL implementation.
 //
 // Processor used here is RISCV based on VexRiscv implementation
@@ -90,31 +90,26 @@ module main(
    input          sys_clock,
    
    //  SDRAM signals 
-   output          sdram_clk_out,
-   output          sdram_cke_out,
-   output          sdram_cs_out,
-   output          sdram_ras_out,
-   output          sdram_cas_out,
-   output          sdram_we_out,
-   output [  1:0]  sdram_dqm_out,
-   output [ 12:0]  sdram_addr_out,
-   output [  1:0]  sdram_ba_out,
-   output [ 15:0]  sdram_data_output_out,
-   output          sdram_data_out_en_out,
-   input  [ 15:0]  sdram_data_input_in,
+   output          sdram_clk,
+   output          sdram_cke,
+   output          sdram_csn,
+   output          sdram_rasn,
+   output          sdram_casn,
+   output          sdram_wen,
+   output [  1:0]  sdram_dqm,
+   output [ 12:0]  sdram_a,
+   output [  1:0]  sdram_ba,
+   inout  [ 15:0]  sdram_d,
    
    // UART signals
-   
-   output         UART_TXD,
-   input          UART_RXD,
+   output         ULX3S_TX,
+   input          ULX3S_RX,
    
    // GPIO signals
-   
    output [3:0]   led,
-   input [3:0]    pushbutton,
+   input [3:0]    btn,
    
    // VGA signals
-   
    output         VGA_HS_O,
    output         VGA_VS_O,
    output [3:0]   VGA_R,
@@ -122,7 +117,6 @@ module main(
    output [3:0]   VGA_G,
    
    // CAMERA signals
-
    output         CAMERA_SCL,
    input          CAMERA_VS,
    input          CAMERA_PCLK,
@@ -133,6 +127,10 @@ module main(
    output         CAMERA_MCLK,
    output         CAMERA_PWDN      
    );
+
+   wire [ 15:0]        sdram_data_in_w;
+   wire [ 15:0]        sdram_data_out_w;
+   wire                sdram_data_out_en_w;
    
    wire               SDRAM_clk;
    wire [31:0]        SDRAM_araddr;
@@ -191,10 +189,10 @@ module main(
       .TCK(0),
 
       .led(led),
-      .pushbutton(pushbutton),
+      .pushbutton(btn),
 
-      .UART_TXD(UART_TXD),
-      .UART_RXD(UART_RXD),
+      .UART_TXD(ULX3S_TX),
+      .UART_RXD(ULX3S_RX),
 
       .VIDEO_clk(clk_vga),  
       .VIDEO_tdata(VIDEO_tdata),
@@ -243,14 +241,13 @@ module main(
 
 sdram_axi sdram_axi_inst
 (
-
-    // .s_axi_awsize(SDRAM_awsize),
-    // .s_axi_arsize(SDRAM_arsize),
-
-    // Inputs
-    .clk_i(SDRAM_clk),
+    .clk_i(SDRAM_clk),  // or sys_clock ?
     .rst_i(sys_resetn),
 
+    // AXI port
+    // Inputs
+    // .s_axi_awsize(SDRAM_awsize),
+    // .s_axi_arsize(SDRAM_arsize),
     .inport_awvalid_i(SDRAM_awvalid),
     .inport_awaddr_i(SDRAM_awaddr),
     .inport_awid_i(0),
@@ -267,9 +264,6 @@ sdram_axi sdram_axi_inst
     .inport_arlen_i(SDRAM_arlen),
     .inport_arburst_i(SDRAM_arburst),
     .inport_rready_i(SDRAM_rready),
-    
-    .sdram_data_input_i(sdram_data_input_in),
-
     // Outputs
     .inport_awready_o(SDRAM_awready),
     .inport_wready_o(SDRAM_wready),
@@ -283,17 +277,19 @@ sdram_axi sdram_axi_inst
     .inport_rid_o(),
     .inport_rlast_o(SDRAM_rlast),
 
-    .sdram_clk_o(sdram_clk_out),
-    .sdram_cke_o(sdram_cke_out),
-    .sdram_cs_o(sdram_cs_out),
-    .sdram_ras_o(sdram_ras_out),
-    .sdram_cas_o(sdram_cas_out),
-    .sdram_we_o(sdram_we_out),
-    .sdram_dqm_o(sdram_dqm_out),
-    .sdram_addr_o(sdram_addr_out),
-    .sdram_ba_o(sdram_ba_out),
-    .sdram_data_output_o(sdram_data_output_out),
-    .sdram_data_out_en_o(sdram_data_out_en_out)
+    // SDRAM Interface
+    .sdram_clk_o(sdram_clk),
+    .sdram_cke_o(sdram_cke),
+    .sdram_cs_o(sdram_csn),
+    .sdram_ras_o(sdram_rasn),
+    .sdram_cas_o(sdram_casn),
+    .sdram_we_o(sdram_wen),
+    .sdram_dqm_o(sdram_dqm),
+    .sdram_addr_o(sdram_a),
+    .sdram_ba_o(sdram_ba),
+    .sdram_data_input_i(sdram_data_in_w),
+    .sdram_data_output_o(sdram_data_out_w),
+    .sdram_data_out_en_o(sdram_data_out_en_w)
 );
 
    //-----------
